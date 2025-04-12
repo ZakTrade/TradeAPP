@@ -1,0 +1,7 @@
+/trade_reporter_app/
+│
+├── app.py                     ← page principale (upload)
+├── pages/
+│   └── 01_Annoter_trades.py   ← page 2 : sélection edge & stratégie
+└── data/
+    └── temp_trades.csv        ← fichier CSV temporaire (upload)
