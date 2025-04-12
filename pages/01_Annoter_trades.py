@@ -62,9 +62,9 @@ for i in range(len(df)):
 
     # --- Session Detection from "open_time" column ---
     try:
-        # Attempt to parse the open_time with pd.to_datetime(), handling errors
+        # Parse the open_time with the correct format: 'YYYY.MM.DD HH:MM:SS'
         open_time_str = trade_data.get("open_time")  # Ensure this matches your column name
-        trade_time = pd.to_datetime(open_time_str, errors='coerce', dayfirst=True)  # Coerce invalid dates to NaT
+        trade_time = pd.to_datetime(open_time_str, format='%Y.%m.%d %H:%M:%S', errors='coerce')  # Custom format
 
         if pd.isnull(trade_time):
             raise ValueError(f"Le format de `open_time` est incorrect pour le trade #{i + 1}. La valeur était : {open_time_str}")
