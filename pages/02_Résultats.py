@@ -2,35 +2,57 @@ import streamlit as st
 import pandas as pd
 
 # ----- Page Config -----
-st.set_page_config(page_title="Trade Reporter - Résultats", layout="wide")
-st.title("📈 Résultats des trades annotés")
+st.set_page_config(page_title="📊 Performance des Trades", layout="wide")
+st.title("📊 Dashboard de Performance des Trades")
 
 # ----- Load Annotated Data -----
 try:
     df = pd.read_csv("data/trades_annotés.csv")
 except FileNotFoundError:
-    st.error("Aucun fichier de résultats trouvé. Assure-toi d’avoir terminé l’annotation.")
+    st.error("Aucun fichier trouvé. Retourne à l'étape d'annotation pour enregistrer tes trades.")
     st.stop()
 
-# ----- Custom CSS Styles -----
-def colorize_column(val, col_name):
-    color_map = {
-        "Session": {"Asia": "#D6EAF8", "London": "#D5F5E3", "New York": "#F9E79F", "After Hours": "#FADBD8", "Inconnu": "#F2F3F4"},
-        "Trade Type": {"Scalping": "#FEF9E7", "Swing": "#FDEDEC", "Position": "#EBF5FB", "Day Trading": "#E8F8F5", "Scalp Intraday": "#F6DDCC"},
-        "Edge Time Frame": {"1min": "#D1F2EB", "5min": "#FCF3CF", "15min": "#E8DAEF", "1h": "#D6EAF8", "4h": "#F9EBEA", "D": "#FDEBD0", "W": "#F5EEF8"}
-    }
+# ----- Nettoyage -----
+df["Profit"] = pd.to_numeric(df["Profit"], errors="coerce")
+df["Risk in Dollars"] = pd.to_numeric(df["Risk in Dollars"], errors="coerce")
 
-    color = color_map.get(col_name, {}).get(val, "#FFFFFF")
-    return f"background-color: {color}"
+# Capital initial saisi
+capital_initial = st.number_input("💰 Capital initial (€)", value=1000.0)
+df["Capital"] = df["Profit"].cumsum() + capital_initial
 
-# ----- Styling Function -----
-def style_dataframe(df):
-    styled_df = df.style \
-        .applymap(lambda val: colorize_column(val, "Session"), subset=["Session"]) \
-        .applymap(lambda val: colorize_column(val, "Trade Type"), subset=["Trade Type"]) \
-        .applymap(lambda val: colorize_column(val, "Edge Time Frame"), subset=["Edge Time Frame"])
-    return styled_df
+# ----- KPIs -----
+total_profit = df["Profit"].sum()
+avg_profit = df["Profit"].mean()
+win_rate = (df["Profit"] > 0).mean() * 100
+best_trade = df["Profit"].max()
+worst_trade = df["Profit"].min()
 
-# ----- Display Data -----
-st.markdown("### 📋 Aperçu des résultats annotés")
-st.dataframe(style_dataframe(df), use_container_width=True)
+col1, col2, col3, col4, col5 = st.columns(5)
+col1.metric("💹 Profit Total (€)", f"{total_profit:.2f}")
+col2.metric("📈 Profit Moyen (€)", f"{avg_profit:.2f}")
+col3.metric("✅ Taux de Réussite", f"{win_rate:.1f}%")
+col4.metric("🏆 Meilleur Trade", f"{best_trade:.2f} €")
+col5.metric("⚠️ Pire Trade", f"{worst_trade:.2f} €")
+
+st.markdown("---")
+
+# ----- Évolution du capital -----
+st.subheader("📊 Évolution du Capital")
+st.line_chart(df["Capital"])
+
+# ----- Meilleurs / Pires trades -----
+st.subheader("🏅 Top 5 Meilleurs Trades")
+st.dataframe(df.sort_values(by="Profit", ascending=False).head(5), use_container_width=True)
+
+st.subheader("💥 Top 5 Pires Trades")
+st.dataframe(df.sort_values(by="Profit", ascending=True).head(5), use_container_width=True)
+
+st.markdown("---")
+
+# ----- Rentabilité par combinaison -----
+st.subheader("🔍 Rentabilité Moyenne par Composante")
+
+def show_profit_table(group_field, title):
+    perf = df.groupby(group_field)["Profit"].mean().reset_index().sort_values(by="Profit", ascending=False)
+    st.markdown(f"**{title}**")
+    st.dataframe(per
