@@ -18,6 +18,10 @@ except FileNotFoundError:
 st.sidebar.header("🕒 Paramètres de fuseau horaire")
 timezone = st.sidebar.selectbox("Sélectionne ton fuseau horaire :", pytz.all_timezones, index=pytz.all_timezones.index("Europe/Paris"))
 
+# Store the selected timezone in the session state
+if 'timezone' not in st.session_state or st.session_state.timezone != timezone:
+    st.session_state.timezone = timezone
+
 # ----- Session Detection Function -----
 def get_session_from_time(trade_time, user_timezone):
     """Calculate the session based on local trade time"""
@@ -75,7 +79,7 @@ for i in range(len(df)):
             raise ValueError(f"Le format de `Open Time` est incorrect pour le trade #{i + 1}. La valeur était : {open_time_str}")
 
         # Calculate session based on user's selected timezone
-        session = get_session_from_time(trade_time, timezone)
+        session = get_session_from_time(trade_time, st.session_state.timezone)
 
         # Add session information to the dataframe
         df.at[i, 'Session'] = session
