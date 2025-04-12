@@ -3,40 +3,59 @@ import pandas as pd
 import os
 
 # ----- Page Config -----
-st.set_page_config(page_title="Trade Reporter - KPIs", layout="wide")
-st.title("📈 Trade Reporter - Étape 3 : KPIs de Performance")
+st.set_page_config(page_title="Performance Report", layout="wide")
+st.title("📈 Performance Report")
 
-# ----- Load Annotated Trades -----
-file_path = "Result/trades_annotes.csv"
-if not os.path.exists(file_path):
-    st.error("Aucun fichier de trades annotés trouvé. Retourne à l'étape 2 pour annoter les trades.")
-    st.stop()
+# Path to the CSV file in the /Result/ directory
+csv_file_path = "Result/trades_annotes.csv"
 
-df = pd.read_csv(file_path)
-
-# ----- Basic Stats -----
-st.header("📊 Statistiques Générales")
-
-if 'Profit' not in df.columns:
-    st.warning("⚠️ La colonne `Profit` est absente. Assure-toi qu'elle existe dans tes données.")
-else:
-    total_trades = len(df)
-    winning_trades = df[df['Profit'] > 0]
-    losing_trades = df[df['Profit'] <= 0]
-
-    win_rate = (len(winning_trades) / total_trades) * 100 if total_trades else 0
-    avg_profit = df['Profit'].mean()
+# Check if the file exists
+if os.path.exists(csv_file_path):
+    # Load the CSV file into a DataFrame
+    df = pd.read_csv(csv_file_path)
+    
+    # ----- Display Summary Statistics -----
+    st.markdown("### 🔎 Performance Summary")
+    
+    # Display total profit and total trades
     total_profit = df['Profit'].sum()
-
-    profit_factor = (
-        winning_trades['Profit'].sum() / abs(losing_trades['Profit'].sum())
-        if not losing_trades.empty else float('inf')
-    )
-
-    avg_risk_pct = df['Risk as % of Capital'].mean()
-
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("📈 Total Trades", total_trades)
-    col2.metric("✅ Win Rate", f"{win_rate:.2f}%")
-    col3.metric("💰 Total Profit", f"{total_profit:.2f}")
-    col4.metric("🧮 Profit Factor
+    total_trades = len(df)
+    
+    st.markdown(f"**Total Profit:** {total_profit:.2f}")
+    st.markdown(f"**Total Number of Trades:** {total_trades}")
+    
+    # ----- Best and Worst Trades -----
+    best_trade = df.loc[df['Profit'].idxmax()]
+    worst_trade = df.loc[df['Profit'].idxmin()]
+    
+    st.markdown("### 🏆 Best Trade")
+    st.write(best_trade)
+    
+    st.markdown("### 💔 Worst Trade")
+    st.write(worst_trade)
+    
+    # ----- Performance by Edge -----
+    st.markdown("### 📊 Performance by Edge")
+    
+    # Group by 'Edge' and calculate average profit per edge
+    edge_performance = df.groupby('Edge')['Profit'].mean().sort_values(ascending=False)
+    st.write(edge_performance)
+    
+    # ----- Performance by 'Ecole' -----
+    st.markdown("### 📊 Performance by Ecole")
+    
+    # Group by 'Ecole' and calculate average profit per school
+    ecole_performance = df.groupby('Ecole')['Profit'].mean().sort_values(ascending=False)
+    st.write(ecole_performance)
+    
+    # ----- Performance by Edge Time Frame -----
+    st.markdown("### 📊 Performance by Edge Time Frame")
+    
+    # Group by 'Edge Time Frame' and calculate average profit per time frame
+    time_frame_performance = df.groupby('Edge Time Frame')['Profit'].mean().sort_values(ascending=False)
+    st.write(time_frame_performance)
+    
+    # ----- Display Data Table -----
+    st.markdown("### 📊 All Trades Data")
+    st.dataframe(df)
+  
