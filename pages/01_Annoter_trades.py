@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import pytz
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # ----- Page Config -----
 st.set_page_config(page_title="Trade Reporter - Annotation", layout="wide")
@@ -79,10 +79,11 @@ annotated_data = []
 
 st.markdown("🔽 Pour chaque trade, sélectionne l’école, l’edge, le type de trade, l’intervalle de l’edge et observe la session automatiquement détectée.")
 
-# Add the 'Session' and 'Trade Type' columns for displaying the session
+# Add the 'Session', 'Trade Type', and 'Risk' columns for displaying the session and risk
 df['Session'] = ""
 df['Trade Type'] = ""  # Add new column for trade type
 df['Edge Time Frame'] = ""  # Add new column for edge time frame
+df['Risk in Dollars'] = 0.0  # Add new column for risk calculation
 
 for i in range(len(df)):
     st.markdown(f"---")
@@ -136,26 +137,26 @@ for i in range(len(df)):
     if edge_time_frame == "Autre":
         edge_time_frame = st.text_input("✍️ Ton intervalle personnalisé :", key=f"custom_edge_time_frame_{i}")
 
+    # --- Risk Calculation ---
+    open_price = trade_data["Open Price"]
+    sl_price = trade_data["S / L"]
+    volume = trade_data["Volume"]
+    symbol = trade_data["Symbol"]
+
+    # Calculate Price Difference
+    price_difference = abs(open_price - sl_price)
+
+    # Determine Contract Size based on Symbol
+    if symbol == "XAUUSD":
+        contract_size = 100
+    else:
+        contract_size = 100000
+
+    # Calculate Risk in Dollars
+    risk_in_dollars = price_difference * volume * contract_size
+    df.at[i, 'Risk in Dollars'] = risk_in_dollars
+
+    st.markdown(f"**💰 Risque calculé en $ :** `{risk_in_dollars:.2f}`")
+
     # Add everything to the annotated data
-    row_data = trade_data.to_dict()
-    row_data["Ecole"] = school
-    row_data["Edge"] = edge
-    row_data["Session"] = session
-    row_data["Trade Type"] = trade_type  # Add the trade type to the row data
-    row_data["Edge Time Frame"] = edge_time_frame  # Add the edge time frame to the row data
-    annotated_data.append(row_data)
-
-# ----- Display the DataFrame with 'Session', 'Trade Type', and 'Edge Time Frame' columns -----
-st.markdown("### 📊 Trades Annotés avec Session, Type de Trade et Intervalle d'Edge")
-st.dataframe(df)
-
-# ----- Save and Export -----
-st.markdown("---")
-if st.button("💾 Enregistrer les annotations"):
-    annotated_df = pd.DataFrame(annotated_data)
-    annotated_df.to_csv("data/trades_annotés.csv", index=False)
-    st.success("✅ Fichier annoté enregistré avec succès.")
-    st.download_button("📥 Télécharger les trades annotés",
-                       data=annotated_df.to_csv(index=False),
-                       file_name="trades_annotes.csv",
-                       mime="text/csv")
+    row_data =
