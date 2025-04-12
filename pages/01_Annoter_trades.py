@@ -71,14 +71,18 @@ edges_dict = {
 # ----- Trade Type Options -----
 trade_types = ["Scalping", "Swing", "Position", "Day Trading", "Scalp Intraday", "Autre"]
 
+# ----- Edge Time Frame Options -----
+time_frames = ["1min", "5min", "15min", "1h", "4h", "D", "W"]
+
 # ----- Display Annotation Interface -----
 annotated_data = []
 
-st.markdown("🔽 Pour chaque trade, sélectionne l’école, l’edge, le type de trade, et observe la session automatiquement détectée.")
+st.markdown("🔽 Pour chaque trade, sélectionne l’école, l’edge, le type de trade, l’intervalle de l’edge et observe la session automatiquement détectée.")
 
-# Add the 'Session' column for displaying the session
+# Add the 'Session' and 'Trade Type' columns for displaying the session
 df['Session'] = ""
 df['Trade Type'] = ""  # Add new column for trade type
+df['Edge Time Frame'] = ""  # Add new column for edge time frame
 
 for i in range(len(df)):
     st.markdown(f"---")
@@ -127,16 +131,22 @@ for i in range(len(df)):
     if trade_type == "Autre":
         trade_type = st.text_input("✍️ Ton type de trade personnalisé :", key=f"custom_trade_type_{i}")
 
+    # --- Edge Time Frame Selection ---
+    edge_time_frame = st.selectbox("⏱️ Intervalle de l'edge", time_frames, key=f"edge_time_frame_{i}")
+    if edge_time_frame == "Autre":
+        edge_time_frame = st.text_input("✍️ Ton intervalle personnalisé :", key=f"custom_edge_time_frame_{i}")
+
     # Add everything to the annotated data
     row_data = trade_data.to_dict()
     row_data["Ecole"] = school
     row_data["Edge"] = edge
     row_data["Session"] = session
     row_data["Trade Type"] = trade_type  # Add the trade type to the row data
+    row_data["Edge Time Frame"] = edge_time_frame  # Add the edge time frame to the row data
     annotated_data.append(row_data)
 
-# ----- Display the DataFrame with 'Session' and 'Trade Type' columns -----
-st.markdown("### 📊 Trades Annotés avec Session et Type de Trade")
+# ----- Display the DataFrame with 'Session', 'Trade Type', and 'Edge Time Frame' columns -----
+st.markdown("### 📊 Trades Annotés avec Session, Type de Trade et Intervalle d'Edge")
 st.dataframe(df)
 
 # ----- Save and Export -----
