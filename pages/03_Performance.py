@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 
 st.set_page_config(page_title="Trade Reporter - Performance", layout="wide")
 st.title("📈 Analyse de Performance des Trades")
@@ -20,10 +19,6 @@ df["Close Time"] = pd.to_datetime(df["Close Time"], format="%Y.%m.%d %H:%M:%S", 
 df = df.sort_values("Close Time")
 df["Balance"] = df["Profit"].cumsum()
 
-# Affichage de l'évolution du solde
-st.subheader("📊 Évolution du solde")
-fig = px.line(df, x="Close Time", y="Balance", title="Évolution du capital")
-st.plotly_chart(fig, use_container_width=True)
 
 # Calcul et affichage des KPIs
 total_profit = df["Profit"].sum()
