@@ -150,8 +150,6 @@ for i in range(len(df)):
     price_difference = abs(open_price - sl_price)
 
     # Determine Contract Size based on Symbol
-    if symbol == "XAUUSD":
-    contract_size = 100
     if symbol == "NAS100":
     contract_size = 1
     else:
