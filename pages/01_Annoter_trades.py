@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import pandas as pd
 import pytz
 from datetime import datetime
@@ -62,7 +62,7 @@ for i in range(len(df)):
 
     # --- Session Detection from "Open Time" column ---
     try:
-        open_time_str = trade_data.get("Open Time")  # Ensure this matches the exact column name
+        open_time_str = trade_data.get("Open Time")  # Corrected to match the 'Open Time' column name
 
         # Check if open_time is not None or empty
         if pd.isna(open_time_str) or open_time_str.strip() == "":
@@ -84,4 +84,35 @@ for i in range(len(df)):
         session = "Inconnu"
         st.warning(f"⚠️ Impossible de calculer la session pour ce trade #{i + 1}: {e}")
 
-    st.markdown(f
+    st.markdown(f"**🕒 Session détectée :** `{session}`")
+
+    # --- École / Edge Inputs ---
+    col1, col2 = st.columns(2)
+    with col1:
+        school = st.selectbox("🎓 École", list(edges_dict.keys()), key=f"school_{i}")
+    with col2:
+        edge = st.selectbox("📌 Edge", edges_dict[school], key=f"edge_{i}")
+        if edge == "Autre":
+            edge = st.text_input("✍️ Ton edge personnalisé :", key=f"custom_edge_{i}")
+
+    # Add everything to the annotated data
+    row_data = trade_data.to_dict()
+    row_data["Ecole"] = school
+    row_data["Edge"] = edge
+    row_data["Session"] = session
+    annotated_data.append(row_data)
+
+# ----- Display the DataFrame with 'Session' column -----
+st.markdown("### 📊 Trades Annotés avec Session")
+st.dataframe(df)
+
+# ----- Save and Export -----
+st.markdown("---")
+if st.button("💾 Enregistrer les annotations"):
+    annotated_df = pd.DataFrame(annotated_data)
+    annotated_df.to_csv("data/trades_annotés.csv", index=False)
+    st.success("✅ Fichier annoté enregistré avec succès.")
+    st.download_button("📥 Télécharger les trades annotés",
+                       data=annotated_df.to_csv(index=False),
+                       file_name="trades_annotes.csv",
+                       mime="text/csv")
