@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import pytz
 from datetime import datetime
+import os  # To create the directory if it doesn't exist
 
 # ----- Page Config -----
 st.set_page_config(page_title="Trade Reporter - Annotation", layout="wide")
@@ -177,9 +178,17 @@ st.dataframe(df)
 
 # ----- Save and Export -----
 st.markdown("---")
+
+# Ensure the /Result directory exists
+result_dir = "Result"
+if not os.path.exists(result_dir):
+    os.makedirs(result_dir)
+
+# Save to the Result folder
+output_path = os.path.join(result_dir, "trades_annotes.csv")
 if st.button("💾 Enregistrer les annotations"):
-    df.to_csv("data/trades_annotés.csv", index=False)
-    st.success("✅ Fichier annoté enregistré avec succès.")
+    df.to_csv(output_path, index=False)
+    st.success(f"✅ Fichier annoté enregistré avec succès à {output_path}.")
     st.download_button("📥 Télécharger les trades annotés",
                        data=df.to_csv(index=False),
                        file_name="trades_annotes.csv",
