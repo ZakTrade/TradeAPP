@@ -24,38 +24,25 @@ if os.path.exists(csv_file_path):
     st.markdown(f"**Total Profit:** {total_profit:.2f}")
     st.markdown(f"**Total Number of Trades:** {total_trades}")
     
-    # ----- Best and Worst Trades -----
-    best_trade = df.loc[df['Profit'].idxmax()]
-    worst_trade = df.loc[df['Profit'].idxmin()]
+    # ----- Performance by Edge Time Frame, Ecole, and Edge -----
+    st.markdown("### 📊 Performance by Edge Time Frame, Ecole, and Edge")
     
-    st.markdown("### 🏆 Best Trade")
-    st.write(best_trade)
+    # Group by 'Edge Time Frame', 'Ecole', and 'Edge' and calculate average profit
+    performance_by_group = df.groupby(['Edge Time Frame', 'Ecole', 'Edge'])['Profit'].mean().reset_index()
+
+    # Display the grouped performance
+    st.write(performance_by_group)
     
-    st.markdown("### 💔 Worst Trade")
-    st.write(worst_trade)
-    
-    # ----- Performance by Edge -----
-    st.markdown("### 📊 Performance by Edge")
-    
-    # Group by 'Edge' and calculate average profit per edge
-    edge_performance = df.groupby('Edge')['Profit'].mean().sort_values(ascending=False)
-    st.write(edge_performance)
-    
-    # ----- Performance by 'Ecole' -----
-    st.markdown("### 📊 Performance by Ecole")
-    
-    # Group by 'Ecole' and calculate average profit per school
-    ecole_performance = df.groupby('Ecole')['Profit'].mean().sort_values(ascending=False)
-    st.write(ecole_performance)
-    
-    # ----- Performance by Edge Time Frame -----
-    st.markdown("### 📊 Performance by Edge Time Frame")
-    
-    # Group by 'Edge Time Frame' and calculate average profit per time frame
-    time_frame_performance = df.groupby('Edge Time Frame')['Profit'].mean().sort_values(ascending=False)
-    st.write(time_frame_performance)
-    
-    # ----- Display Data Table -----
+    # ----- Performance Table -----
     st.markdown("### 📊 All Trades Data")
     st.dataframe(df)
-  
+    
+    # ----- Download Button -----
+    st.markdown("---")
+    st.download_button("📥 Télécharger le rapport complet",
+                       data=performance_by_group.to_csv(index=False),
+                       file_name="performance_report.csv",
+                       mime="text/csv")
+    
+else:
+    st.error("Le fichier 'trades_annotes.csv' n'a pas été trouvé dans le répertoire '/Result/'.")
