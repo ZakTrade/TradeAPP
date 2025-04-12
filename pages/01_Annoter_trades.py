@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import pytz
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ----- Page Config -----
 st.set_page_config(page_title="Trade Reporter - Annotation", layout="wide")
@@ -24,20 +24,39 @@ if 'timezone' not in st.session_state or st.session_state.timezone != timezone:
 
 # ----- Session Detection Function -----
 def get_session_from_time(trade_time, user_timezone):
-    """Calculate the session based on local trade time"""
+    """Calculate the session based on local trade time with dynamic session times."""
     local_tz = pytz.timezone(user_timezone)
-    # Localize the trade time based on the selected user's timezone
-    trade_time_local = local_tz.localize(trade_time)
 
-    # Check the session based on the local time
-    if 0 <= trade_time_local.hour < 8:
-        return "Asia"
-    elif 8 <= trade_time_local.hour < 13:
-        return "London"
-    elif 13 <= trade_time_local.hour < 22:
-        return "New York"
-    else:
-        return "After Hours"
+    # Define session start and end times in UTC (generic UTC times for sessions)
+    sessions = {
+        "Asia": {"start": "00:00", "end": "08:00"},      # Asia session
+        "London": {"start": "08:00", "end": "13:00"},    # London session
+        "New York": {"start": "13:00", "end": "22:00"},  # New York session
+        "After Hours": {"start": "22:00", "end": "00:00"} # After Hours session
+    }
+
+    # Convert session times to the user's timezone
+    session_times = {}
+    for session, times in sessions.items():
+        # Convert the session start and end times (assumed UTC time) to the user's timezone
+        start_time_utc = pytz.utc.localize(datetime.strptime(times["start"], "%H:%M"))
+        end_time_utc = pytz.utc.localize(datetime.strptime(times["end"], "%H:%M"))
+
+        # Convert from UTC to the user's selected timezone
+        start_time_local = start_time_utc.astimezone(local_tz)
+        end_time_local = end_time_utc.astimezone(local_tz)
+
+        session_times[session] = {
+            "start": start_time_local,
+            "end": end_time_local
+        }
+
+    # Check the session based on the local trade time
+    for session, times in session_times.items():
+        # Check if the trade time falls within the session range
+        if times["start"].time() <= trade_time.time() < times["end"].time():
+            return session
+    return "After Hours"  # Default session if no match found
 
 # ----- Strategy / Edge Mapping -----
 edges_dict = {
