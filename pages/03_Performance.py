@@ -2,6 +2,32 @@ import streamlit as st
 import pandas as pd
 # import plotly.express as px
 
+ ----- Page Config -----
+st.set_page_config(page_title="Afficher le CSV", layout="wide")
+st.title("📊 Affichage des Trades Annotés")
+
+# Path to the CSV file in the /Result/ directory
+csv_file_path = "Result/trades_annotes.csv"
+
+# Check if the file exists
+if os.path.exists(csv_file_path):
+    # Load the CSV file into a DataFrame
+    df = pd.read_csv(csv_file_path)
+    
+    # Display the DataFrame
+    st.markdown("### 📊 Trades Annotés")
+    st.dataframe(df)
+    
+    # You can add additional features like downloading the file
+    st.markdown("---")
+    st.download_button("📥 Télécharger le fichier CSV",
+                       data=df.to_csv(index=False),
+                       file_name="trades_annotes.csv",
+                       mime="text/csv")
+else:
+    st.error("Le fichier 'trades_annotes.csv' n'a pas été trouvé dans le répertoire '/Result/'.")
+
+
 st.set_page_config(page_title="Trade Reporter - Performance", layout="wide")
 st.title("📈 Analyse de Performance des Trades")
 
