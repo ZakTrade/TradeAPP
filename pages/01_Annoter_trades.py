@@ -152,7 +152,7 @@ for i in range(len(df)):
     # Determine Contract Size based on Symbol
     if symbol == "XAUUSD":
         contract_size = 100
-    else if symbol == "NAS100":
+    elif symbol == "NAS100":
         contract_size = 1
         else : 
             contract_size = 100000
