@@ -1,0 +1,38 @@
+import streamlit as st
+import pandas as pd
+import os
+
+# ----- Page Config -----
+st.set_page_config(page_title="Trade Performance", layout="wide")
+st.title("📊 Performance des Trades")
+
+# ----- Load the annotated trades file -----
+trades_file_path = "Result/trades_annotes.csv"
+
+# Check if the file exists
+if os.path.exists(trades_file_path):
+    df = pd.read_csv(trades_file_path)
+else:
+    st.error("Le fichier annoté 'trades_annotes.csv' n'a pas été trouvé. Assure-toi d'avoir enregistré les annotations.")
+    st.stop()
+
+# ----- Display the dataframe -----
+st.markdown("### 📊 Trades Annotés avec Session")
+st.dataframe(df)
+
+# ----- Perform analysis -----
+# Example of a simple analysis: top 5 trades by Profit
+st.markdown("### 💰 Top 5 des trades par Profit")
+top_5_trades = df.nlargest(5, 'Profit')[['Symbol', 'Profit', 'Session', 'Ecole', 'Edge']]
+st.dataframe(top_5_trades)
+
+# ----- Graphical representation (if needed) -----
+# Add some performance-related visualizations (e.g., Profit by Session)
+st.markdown("### 📈 Profit par session")
+profit_by_session = df.groupby('Session')['Profit'].sum().reset_index()
+st.bar_chart(profit_by_session.set_index('Session')['Profit'])
+
+# Example: Profit by "Ecole"
+st.markdown("### 📊 Profit par École")
+profit_by_ecole = df.groupby('Ecole')['Profit'].sum().reset_index()
+st.bar_chart(profit_by_ecole.set_index('Ecole')['Profit'])
