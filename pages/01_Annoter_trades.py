@@ -4,14 +4,16 @@ import pandas as pd
 st.set_page_config(page_title="Trade Reporter - Annotation", layout="wide")
 st.title("✍️ Trade Reporter - Étape 2 : Annotation des trades")
 
-# Chargement du fichier temporaire
+# Chargement du fichier CSV temporaire
 try:
     df = pd.read_csv("data/temp_trades.csv")
 except FileNotFoundError:
     st.error("Aucun fichier trouvé. Retourne à l'étape 1 pour uploader ton fichier.")
     st.stop()
 
-# Écoles et edges
+st.markdown("🔽 Annoter chaque trade avec l’école (stratégie) et l’edge utilisé.")
+
+# Dictionnaire des edges par école
 edges_dict = {
     "ICT": ["FVG", "OTE", "BOS", "SMT", "Breaker", "Liquidity Sweep", "Judas Swing", "Autre"],
     "SMC": ["CHoCH", "BOS", "FVG", "Order Block", "Liquidity Grab", "Autre"],
@@ -21,32 +23,50 @@ edges_dict = {
     "Autre": ["Edge personnalisé"]
 }
 
-st.markdown("🔽 Choisis l’école et le edge pour chaque trade :")
+# Création des nouvelles colonnes dans la DataFrame
+df["Ecole"] = ""
+df["Edge"] = ""
 
-# Pour chaque ligne, on affiche un petit formulaire
 annotated_data = []
 
-for index, row in df.iterrows():
-    with st.expander(f"Trade #{index + 1} – {row.get('instrument', 'instrument inconnu')}"):
-        col1, col2 = st.columns([1, 2])
-        
-        with col1:
-            school = st.selectbox(f"École #{index+1}", list(edges_dict.keys()), key=f"school_{index}")
-        
-        with col2:
-            edge = st.selectbox(f"Edge utilisé #{index+1}", edges_dict[school], key=f"edge_{index}")
-            if edge == "Autre":
-                edge = st.text_input("Edge personnalisé :", key=f"custom_edge_{index}")
+st.write("👇 Complète chaque ligne :")
 
-        # Ajouter les annotations aux données
-        annotated_row = row.to_dict()
-        annotated_row["Ecole"] = school
-        annotated_row["Edge"] = edge
-        annotated_data.append(annotated_row)
+for i in range(len(df)):
+    row = df.iloc[i]
+    st.markdown(f"---")
+    st.markdown(f"**Trade #{i+1}** – Instrument: `{row.get('instrument', 'inconnu')}`")
 
-# Bouton pour enregistrer
-if st.button("💾 Sauvegarder les trades annotés"):
+    # Affichage des infos du trade
+    cols = st.columns(df.shape[1] - 2)  # -2 because we're adding Ecole & Edge
+
+    for j, column in enumerate(df.columns[:-2]):  # Show existing data
+        with cols[j]:
+            st.markdown(f"**{column}**")
+            st.write(row[column])
+
+    col_school, col_edge = st.columns(2)
+
+    with col_school:
+        school = st.selectbox("🎓 École", list(edges_dict.keys()), key=f"school_{i}")
+    with col_edge:
+        edge_options = edges_dict.get(school, ["Autre"])
+        edge = st.selectbox("📌 Edge", edge_options, key=f"edge_{i}")
+        if edge == "Autre":
+            edge = st.text_input("✍️ Edge personnalisé", key=f"custom_edge_{i}")
+
+    # Ajout dans la nouvelle ligne annotée
+    annotated_row = row.to_dict()
+    annotated_row["Ecole"] = school
+    annotated_row["Edge"] = edge
+    annotated_data.append(annotated_row)
+
+# Sauvegarde
+st.markdown("---")
+if st.button("💾 Enregistrer les annotations"):
     annotated_df = pd.DataFrame(annotated_data)
     annotated_df.to_csv("data/trades_annotés.csv", index=False)
-    st.success("✅ Trades annotés enregistrés avec succès !")
-    st.download_button("📥 Télécharger le fichier annoté", data=annotated_df.to_csv(index=False), file_name="trades_annotes.csv")
+    st.success("✅ Fichier annoté enregistré avec succès.")
+    st.download_button("📥 Télécharger les trades annotés",
+                       data=annotated_df.to_csv(index=False),
+                       file_name="trades_annotes.csv",
+                       mime="text/csv")
