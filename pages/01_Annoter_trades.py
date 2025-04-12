@@ -16,15 +16,21 @@ except FileNotFoundError:
 
 # ----- Sidebar: Timezone -----
 st.sidebar.header("🕒 Paramètres de fuseau horaire")
-timezone = st.sidebar.selectbox("Ton fuseau horaire :", pytz.all_timezones, index=pytz.all_timezones.index("Europe/Paris"))
+timezone = st.sidebar.selectbox("Sélectionne ton fuseau horaire :", pytz.all_timezones, index=pytz.all_timezones.index("Europe/Paris"))
 
 # ----- Session Detection Function -----
-def get_session_from_utc(utc_time):
-    if 0 <= utc_time.hour < 8:
+def get_session_from_time(trade_time, user_timezone):
+    """Calculate the session based on local trade time"""
+    local_tz = pytz.timezone(user_timezone)
+    # Localize the trade time based on the user's selected timezone
+    trade_time_local = local_tz.localize(trade_time)
+
+    # Check the session based on the local time
+    if 0 <= trade_time_local.hour < 8:
         return "Asia"
-    elif 8 <= utc_time.hour < 13:
+    elif 8 <= trade_time_local.hour < 13:
         return "London"
-    elif 13 <= utc_time.hour < 22:
+    elif 13 <= trade_time_local.hour < 22:
         return "New York"
     else:
         return "After Hours"
@@ -53,13 +59,42 @@ for i in range(len(df)):
 
     # --- Session Detection from "open_time" column ---
     try:
+        # Parse open time from the trade
         open_time_str = trade_data.get("open_time")  # Ensure this matches your column name
-        local_tz = pytz.timezone(timezone)
-        open_time_local = local_tz.localize(datetime.strptime(open_time_str, "%Y-%m-%d %H:%M:%S"))
-        open_time_utc = open_time_local.astimezone(pytz.utc)
-        session = get_session_from_utc(open_time_utc)
+        trade_time = datetime.strptime(open_time_str, "%Y-%m-%d %H:%M:%S")
+
+        # Calculate session based on user's selected timezone
+        session = get_session_from_time(trade_time, timezone)
+
     except Exception as e:
         session = "Inconnu"
         st.warning(f"⚠️ Impossible de calculer la session pour ce trade : {e}")
 
-    st.markdown(f"**🕒 Session détectée :** `{ses
+    st.markdown(f"**🕒 Session détectée :** `{session}`")
+
+    # --- École / Edge Inputs ---
+    col1, col2 = st.columns(2)
+    with col1:
+        school = st.selectbox("🎓 École", list(edges_dict.keys()), key=f"school_{i}")
+    with col2:
+        edge = st.selectbox("📌 Edge", edges_dict[school], key=f"edge_{i}")
+        if edge == "Autre":
+            edge = st.text_input("✍️ Ton edge personnalisé :", key=f"custom_edge_{i}")
+
+    # Add everything to the annotated data
+    row_data = trade_data.to_dict()
+    row_data["Ecole"] = school
+    row_data["Edge"] = edge
+    row_data["Session"] = session
+    annotated_data.append(row_data)
+
+# ----- Save and Export -----
+st.markdown("---")
+if st.button("💾 Enregistrer les annotations"):
+    annotated_df = pd.DataFrame(annotated_data)
+    annotated_df.to_csv("data/trades_annotés.csv", index=False)
+    st.success("✅ Fichier annoté enregistré avec succès.")
+    st.download_button("📥 Télécharger les trades annotés",
+                       data=annotated_df.to_csv(index=False),
+                       file_name="trades_annotes.csv",
+                       mime="text/csv")
