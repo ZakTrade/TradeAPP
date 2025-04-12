@@ -75,8 +75,6 @@ trade_types = ["Scalping", "Swing", "Position", "Day Trading", "Scalp Intraday",
 time_frames = ["1min", "5min", "15min", "1h", "4h", "D", "W"]
 
 # ----- Display Annotation Interface -----
-annotated_data = []
-
 st.markdown("🔽 Pour chaque trade, sélectionne l’école, l’edge, le type de trade, l’intervalle de l’edge et observe la session automatiquement détectée.")
 
 # Add the 'Session', 'Trade Type', and 'Risk' columns for displaying the session and risk
@@ -158,27 +156,22 @@ for i in range(len(df)):
 
     st.markdown(f"**💰 Risque calculé en $ :** `{risk_in_dollars:.2f}`")
 
-    # Add everything to the annotated data
-    row_data = trade_data.to_dict()
-    row_data["Ecole"] = school
-    row_data["Edge"] = edge
-    row_data["Session"] = session
-    row_data["Trade Type"] = trade_type
-    row_data["Edge Time Frame"] = edge_time_frame
-    row_data["Risk in Dollars"] = risk_in_dollars
-    annotated_data.append(row_data)
+    # Update the dataframe with new annotations
+    df.at[i, 'Ecole'] = school
+    df.at[i, 'Edge'] = edge
+    df.at[i, 'Trade Type'] = trade_type
+    df.at[i, 'Edge Time Frame'] = edge_time_frame
 
-# ----- Display the DataFrame with 'Session' column -----
+# ----- Display the DataFrame with updated annotations -----
 st.markdown("### 📊 Trades Annotés avec Session")
 st.dataframe(df)
 
 # ----- Save and Export -----
 st.markdown("---")
 if st.button("💾 Enregistrer les annotations"):
-    annotated_df = pd.DataFrame(annotated_data)
-    annotated_df.to_csv("data/trades_annotés.csv", index=False)
+    df.to_csv("data/trades_annotés.csv", index=False)
     st.success("✅ Fichier annoté enregistré avec succès.")
     st.download_button("📥 Télécharger les trades annotés",
-                       data=annotated_df.to_csv(index=False),
+                       data=df.to_csv(index=False),
                        file_name="trades_annotes.csv",
                        mime="text/csv")
