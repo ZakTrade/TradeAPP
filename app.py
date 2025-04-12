@@ -1,33 +1,45 @@
-# app.py
 import streamlit as st
 import pandas as pd
 import os
 
-# ----- Page Config -----
-st.set_page_config(page_title="Trade Reporter - Étape 1 : Upload des Trades", layout="wide")
-st.title("📂 Trade Reporter - Étape 1 : Upload des Trades")
+# --- Page Configuration ---
+st.set_page_config(page_title="Trade Reporter - Upload", layout="centered")
+st.title("📊 Trade Reporter - Étape 1 : Import des trades")
 
-# ----- File Upload -----
-st.sidebar.header("🔽 Télécharge ton fichier CSV de trades")
+# --- Formulaire principal ---
+st.subheader("⚙️ Paramètres généraux")
 
-# Let the user upload a file
-uploaded_file = st.sidebar.file_uploader("Choisir un fichier CSV", type=["csv"])
+# Trader name and capital input
+trader_name = st.text_input("Nom du trader", "TraderX")
+capital = st.number_input("Capital initial (€)", min_value=100.0, value=1000.0)
 
-# If a file is uploaded, save it temporarily and navigate to the next step
+# Upload the CSV file
+uploaded_file = st.file_uploader("📂 Upload ton fichier de trades (.csv)", type="csv")
+
+# --- Handling file upload and number format issue ---
 if uploaded_file is not None:
-    # Save the uploaded CSV file to a temporary location
-    os.makedirs("data", exist_ok=True)  # Ensure the directory exists
-    file_path = os.path.join("data", "temp_trades.csv")
+    # Read the file into a dataframe
+    df = pd.read_csv(uploaded_file)
 
-    with open(file_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
+    # Detect if the file has numbers with commas (likely Mac/European format)
+    if df.select_dtypes(include='object').apply(lambda col: col.str.contains(',', na=False)).any().any():
+        # Replace commas with dots in numeric columns
+        df = df.applymap(lambda x: str(x).replace(',', '.') if isinstance(x, str) else x)
 
-    st.success(f"📈 Fichier `{uploaded_file.name}` téléchargé avec succès.")
+    # Try to convert all columns to numeric where applicable
+    for col in df.select_dtypes(include='object').columns:
+        df[col] = pd.to_numeric(df[col], errors='ignore')  # Ignore non-convertible columns
 
-    # Provide a button to navigate to the next step (Trade annotation)
-    if st.button("👉 Passer à l'étape 2 : Annotation des trades"):
-        st.session_state.uploaded_file_path = file_path
-        st.experimental_rerun()  # Rerun to go to the next page
+    # Show success message and the first few rows
+    st.success("✅ Fichier chargé avec succès !")
+    st.dataframe(df.head())
 
+    # Save the file temporarily for use in the next page
+    os.makedirs("data", exist_ok=True)  # Ensure the 'data' directory exists
+    df.to_csv("data/temp_trades.csv", index=False)
+
+    # Provide a link to the next page for annotation
+    st.markdown("➡️ Passe à l'étape suivante pour annoter tes trades.")
+    st.page_link("pages/01_Annoter_trades.py", label="🚀 Annoter les trades", icon="✍️")
 else:
-    st.warning("⚠️ Aucune fichier téléchargé. Veuillez télécharger un fichier CSV de trades.")
+    st.info("Upload ton fichier pour activer l'étape suivante.")
