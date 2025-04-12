@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import pytz
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # ----- Page Config -----
 st.set_page_config(page_title="Trade Reporter - Annotation", layout="wide")
@@ -68,13 +68,22 @@ edges_dict = {
     "Autre": ["Edge personnalisé"]
 }
 
+# ----- Trade Type Options -----
+trade_types = ["Scalping", "Swing", "Position", "Day Trading", "Scalp Intraday", "Autre"]
+
+# ----- Edge Time Frame Options -----
+time_frames = ["1min", "5min", "15min", "1h", "4h", "D", "W"]
+
 # ----- Display Annotation Interface -----
 annotated_data = []
 
-st.markdown("🔽 Pour chaque trade, sélectionne l’école, l’edge, et observe la session automatiquement détectée.")
+st.markdown("🔽 Pour chaque trade, sélectionne l’école, l’edge, le type de trade, l’intervalle de l’edge et observe la session automatiquement détectée.")
 
-# Add the 'Session' column for displaying the session
+# Add the 'Session', 'Trade Type', and 'Risk' columns for displaying the session and risk
 df['Session'] = ""
+df['Trade Type'] = ""  # Add new column for trade type
+df['Edge Time Frame'] = ""  # Add new column for edge time frame
+df['Risk in Dollars'] = 0.0  # Add new column for risk calculation
 
 for i in range(len(df)):
     st.markdown(f"---")
@@ -118,11 +127,45 @@ for i in range(len(df)):
         if edge == "Autre":
             edge = st.text_input("✍️ Ton edge personnalisé :", key=f"custom_edge_{i}")
 
+    # --- Trade Type Selection ---
+    trade_type = st.selectbox("⚡ Type de trade", trade_types, key=f"trade_type_{i}")
+    if trade_type == "Autre":
+        trade_type = st.text_input("✍️ Ton type de trade personnalisé :", key=f"custom_trade_type_{i}")
+
+    # --- Edge Time Frame Selection ---
+    edge_time_frame = st.selectbox("⏱️ Intervalle de l'edge", time_frames, key=f"edge_time_frame_{i}")
+    if edge_time_frame == "Autre":
+        edge_time_frame = st.text_input("✍️ Ton intervalle personnalisé :", key=f"custom_edge_time_frame_{i}")
+
+    # --- Risk Calculation ---
+    open_price = trade_data["Open Price"]
+    sl_price = trade_data["S / L"]
+    volume = trade_data["Volume"]
+    symbol = trade_data["Symbol"]
+
+    # Calculate Price Difference
+    price_difference = abs(open_price - sl_price)
+
+    # Determine Contract Size based on Symbol
+    if symbol == "XAUUSD":
+        contract_size = 100
+    else:
+        contract_size = 100000
+
+    # Calculate Risk in Dollars
+    risk_in_dollars = price_difference * volume * contract_size
+    df.at[i, 'Risk in Dollars'] = risk_in_dollars
+
+    st.markdown(f"**💰 Risque calculé en $ :** `{risk_in_dollars:.2f}`")
+
     # Add everything to the annotated data
     row_data = trade_data.to_dict()
     row_data["Ecole"] = school
     row_data["Edge"] = edge
     row_data["Session"] = session
+    row_data["Trade Type"] = trade_type
+    row_data["Edge Time Frame"] = edge_time_frame
+    row_data["Risk in Dollars"] = risk_in_dollars
     annotated_data.append(row_data)
 
 # ----- Display the DataFrame with 'Session' column -----
