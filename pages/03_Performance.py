@@ -61,7 +61,7 @@ else:
 
 # Analyse de rentabilité par combinaison
 st.subheader("🔍 Synthèse des combinaisons les plus rentables")
-group_cols = ["Session", "Edge Time Frame", "Ecole", "Edge", "Trade Type"]
+group_cols = ["Ecole", "Edge"]
 grouped = df.groupby(group_cols)["Profit"].sum().reset_index()
 grouped = grouped.sort_values(by="Profit", ascending=False)
 
