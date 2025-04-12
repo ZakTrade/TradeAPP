@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 
 # ----- Page Config -----
 st.set_page_config(page_title="📊 Performance des Trades", layout="wide")
@@ -13,15 +12,15 @@ except FileNotFoundError:
     st.error("Aucun fichier trouvé. Retourne à l'étape d'annotation pour enregistrer tes trades.")
     st.stop()
 
-# ----- Nettoyage & Préparation -----
+# ----- Nettoyage -----
 df["Profit"] = pd.to_numeric(df["Profit"], errors="coerce")
 df["Risk in Dollars"] = pd.to_numeric(df["Risk in Dollars"], errors="coerce")
 
-# Calcul de l’évolution du capital
+# Capital initial saisi
 capital_initial = st.number_input("💰 Capital initial (€)", value=1000.0)
 df["Capital"] = df["Profit"].cumsum() + capital_initial
 
-# KPI Zone
+# ----- KPIs -----
 total_profit = df["Profit"].sum()
 avg_profit = df["Profit"].mean()
 win_rate = (df["Profit"] > 0).mean() * 100
@@ -31,60 +30,45 @@ worst_trade = df["Profit"].min()
 col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric("💹 Profit Total (€)", f"{total_profit:.2f}")
 col2.metric("📈 Profit Moyen (€)", f"{avg_profit:.2f}")
-col3.metric("✅ Taux de Réussite", f"{win_rate:.2f}%")
-col4.metric("🏆 Meilleur Trade (€)", f"{best_trade:.2f}")
-col5.metric("⚠️ Pire Trade (€)", f"{worst_trade:.2f}")
+col3.metric("✅ Taux de Réussite", f"{win_rate:.1f}%")
+col4.metric("🏆 Meilleur Trade", f"{best_trade:.2f} €")
+col5.metric("⚠️ Pire Trade", f"{worst_trade:.2f} €")
 
 st.markdown("---")
 
-# ----- Graphique : Évolution du Capital -----
+# ----- Évolution du capital -----
 st.subheader("📊 Évolution du Capital")
-fig = px.line(df, y="Capital", title="Évolution du capital au fil des trades")
-st.plotly_chart(fig, use_container_width=True)
+st.line_chart(df["Capital"])
 
-# ----- Meilleurs et Pires trades -----
-st.subheader("🏅 Top 5 des meilleurs trades")
+# ----- Meilleurs / Pires trades -----
+st.subheader("🏅 Top 5 Meilleurs Trades")
 st.dataframe(df.sort_values(by="Profit", ascending=False).head(5), use_container_width=True)
 
-st.subheader("💥 Top 5 des pires trades")
+st.subheader("💥 Top 5 Pires Trades")
 st.dataframe(df.sort_values(by="Profit", ascending=True).head(5), use_container_width=True)
 
 st.markdown("---")
 
-# ----- Analyse de rentabilité par combinaison -----
-st.subheader("🔍 Analyse de rentabilité par combinaison")
+# ----- Rentabilité par combinaison -----
+st.subheader("🔍 Rentabilité Moyenne par Composante")
 
-# Par session
-session_perf = df.groupby("Session")["Profit"].mean().reset_index().sort_values(by="Profit", ascending=False)
-st.markdown("**📆 Par Session**")
-st.dataframe(session_perf)
+def show_profit_table(group_field, title):
+    perf = df.groupby(group_field)["Profit"].mean().reset_index().sort_values(by="Profit", ascending=False)
+    st.markdown(f"**{title}**")
+    st.dataframe(perf, use_container_width=True)
 
-# Par Edge Time Frame
-timeframe_perf = df.groupby("Edge Time Frame")["Profit"].mean().reset_index().sort_values(by="Profit", ascending=False)
-st.markdown("**⏱️ Par Edge Time Frame**")
-st.dataframe(timeframe_perf)
+show_profit_table("Session", "📆 Session")
+show_profit_table("Edge Time Frame", "⏱️ Edge Time Frame")
+show_profit_table("Trade Type", "⚡ Type de Trade")
+show_profit_table("Ecole", "🎓 École")
+show_profit_table("Edge", "📌 Edge")
 
-# Par Trade Type
-type_perf = df.groupby("Trade Type")["Profit"].mean().reset_index().sort_values(by="Profit", ascending=False)
-st.markdown("**⚡ Par Type de Trade**")
-st.dataframe(type_perf)
-
-# Par École
-school_perf = df.groupby("Ecole")["Profit"].mean().reset_index().sort_values(by="Profit", ascending=False)
-st.markdown("**🎓 Par École**")
-st.dataframe(school_perf)
-
-# Par Edge
-edge_perf = df.groupby("Edge")["Profit"].mean().reset_index().sort_values(by="Profit", ascending=False)
-st.markdown("**📌 Par Edge**")
-st.dataframe(edge_perf)
-
-# ----- Rentabilité par % de risque -----
+# Rentabilité selon % de risque
+st.subheader("📉 Rentabilité selon le % de risque")
 df["Risk %"] = df["Risk in Dollars"] / capital_initial * 100
-risk_buckets = pd.cut(df["Risk %"], bins=[0, 0.5, 1, 2, 5, 10, 100], include_lowest=True)
-risk_perf = df.groupby(risk_buckets)["Profit"].mean().reset_index().rename(columns={"Risk %": "Risk Range"})
-st.markdown("**📉 Rentabilité selon le pourcentage de risque**")
-st.dataframe(risk_perf)
+bins = [0, 0.5, 1, 2, 5, 10, 100]
+df["Risk Range"] = pd.cut(df["Risk %"], bins=bins)
+risk_perf = df.groupby("Risk Range")["Profit"].mean().reset_index()
+st.dataframe(risk_perf, use_container_width=True)
 
-# ----- Fin -----
-st.success("✅ Dashboard généré avec succès.")
+st.success("✅ Rapport de performance généré avec succès.")
