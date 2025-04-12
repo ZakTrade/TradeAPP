@@ -26,7 +26,7 @@ if 'timezone' not in st.session_state or st.session_state.timezone != timezone:
 def get_session_from_time(trade_time, user_timezone):
     """Calculate the session based on local trade time"""
     local_tz = pytz.timezone(user_timezone)
-    # Localize the trade time based on the user's selected timezone
+    # Localize the trade time based on the selected user's timezone
     trade_time_local = local_tz.localize(trade_time)
 
     # Check the session based on the local time
