@@ -62,8 +62,13 @@ for i in range(len(df)):
 
     # --- Session Detection from "open_time" column ---
     try:
-        # Parse the open_time with the correct format: 'YYYY.MM.DD HH:MM:SS'
         open_time_str = trade_data.get("open_time")  # Ensure this matches your column name
+        
+        # Check if open_time is not None or empty
+        if pd.isna(open_time_str) or open_time_str.strip() == "":
+            raise ValueError(f"Le champ `open_time` est manquant ou vide pour le trade #{i + 1}.")
+
+        # Parse the open_time with the correct format: 'YYYY.MM.DD HH:MM:SS'
         trade_time = pd.to_datetime(open_time_str, format='%Y.%m.%d %H:%M:%S', errors='coerce')  # Custom format
 
         if pd.isnull(trade_time):
