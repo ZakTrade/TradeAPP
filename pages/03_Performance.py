@@ -1,56 +1,42 @@
 import streamlit as st
 import pandas as pd
-# import plotly.express as px
+import os
 
+# ----- Page Config -----
+st.set_page_config(page_title="Trade Reporter - KPIs", layout="wide")
+st.title("📈 Trade Reporter - Étape 3 : KPIs de Performance")
 
-# Vérifiez les colonnes existantes dans le DataFrame
-st.write("Colonnes disponibles dans le DataFrame :")
-st.write(df.columns)
+# ----- Load Annotated Trades -----
+file_path = "Result/trades_annotes.csv"
+if not os.path.exists(file_path):
+    st.error("Aucun fichier de trades annotés trouvé. Retourne à l'étape 2 pour annoter les trades.")
+    st.stop()
 
-# Nettoyage des données
-df["Profit"] = pd.to_numeric(df["Profit"], errors="coerce").fillna(0)
-df["Close Time"] = pd.to_datetime(df["Close Time"], format="%Y.%m.%d %H:%M:%S", errors="coerce")
+df = pd.read_csv(file_path)
 
-# Calcul du solde cumulé
-df = df.sort_values("Close Time")
-df["Balance"] = df["Profit"].cumsum()
+# ----- Basic Stats -----
+st.header("📊 Statistiques Générales")
 
-
-# Calcul et affichage des KPIs
-total_profit = df["Profit"].sum()
-avg_profit = df["Profit"].mean()
-win_rate = (df[df["Profit"] > 0].shape[0] / df.shape[0]) * 100
-
-st.subheader("📊 Indicateurs Clés de Performance (KPIs)")
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("Profit Total (€)", f"{total_profit:.2f}")
-with col2:
-    st.metric("Profit Moyen par Trade (€)", f"{avg_profit:.2f}")
-with col3:
-    st.metric("Taux de Réussite (%)", f"{win_rate:.2f}")
-
-# Vérification des 5 meilleurs et 5 pires trades
-st.subheader("🏆 Meilleurs et Pires Trades")
-col1, col2 = st.columns(2)
-
-# Assurez-vous que les colonnes nécessaires existent avant de tenter de les utiliser
-if set(["Profit", "Symbol", "Session", "Ecole", "Edge"]).issubset(df.columns):
-    with col1:
-        st.markdown("**💹 Top 5 Profits**")
-        st.dataframe(df.nlargest(5, "Profit")[["Symbol", "Profit", "Session", "Ecole", "Edge"]])
-
-    with col2:
-        st.markdown("**📉 Top 5 Pertes**")
-        st.dataframe(df.nsmallest(5, "Profit")[["Symbol", "Profit", "Session", "Ecole", "Edge"]])
+if 'Profit' not in df.columns:
+    st.warning("⚠️ La colonne `Profit` est absente. Assure-toi qu'elle existe dans tes données.")
 else:
-    st.error("Certaines colonnes nécessaires ('Symbol', 'Profit', 'Session', 'Ecole', 'Edge') sont manquantes dans le DataFrame.")
+    total_trades = len(df)
+    winning_trades = df[df['Profit'] > 0]
+    losing_trades = df[df['Profit'] <= 0]
 
-# Analyse de rentabilité par combinaison
-st.subheader("🔍 Synthèse des combinaisons les plus rentables")
-group_cols = ["Ecole", "Edge"]
-grouped = df.groupby(group_cols)["Profit"].sum().reset_index()
-grouped = grouped.sort_values(by="Profit", ascending=False)
+    win_rate = (len(winning_trades) / total_trades) * 100 if total_trades else 0
+    avg_profit = df['Profit'].mean()
+    total_profit = df['Profit'].sum()
 
-st.markdown("**💡 Top 10 Combinaisons Rentables**")
-st.dataframe(grouped.head(10))
+    profit_factor = (
+        winning_trades['Profit'].sum() / abs(losing_trades['Profit'].sum())
+        if not losing_trades.empty else float('inf')
+    )
+
+    avg_risk_pct = df['Risk as % of Capital'].mean()
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("📈 Total Trades", total_trades)
+    col2.metric("✅ Win Rate", f"{win_rate:.2f}%")
+    col3.metric("💰 Total Profit", f"{total_profit:.2f}")
+    col4.metric("🧮 Profit Factor
