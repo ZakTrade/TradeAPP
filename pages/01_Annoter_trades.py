@@ -50,6 +50,9 @@ annotated_data = []
 
 st.markdown("🔽 Pour chaque trade, sélectionne l’école, l’edge, et observe la session automatiquement détectée.")
 
+# Add the 'Session' column for displaying the session
+df['Session'] = ""
+
 for i in range(len(df)):
     st.markdown(f"---")
     st.markdown(f"### 🧾 Trade #{i + 1}")
@@ -59,12 +62,18 @@ for i in range(len(df)):
 
     # --- Session Detection from "open_time" column ---
     try:
-        # Parse open time from the trade
+        # Parse open time from the trade using pd.to_datetime() for flexible datetime parsing
         open_time_str = trade_data.get("open_time")  # Ensure this matches your column name
-        trade_time = datetime.strptime(open_time_str, "%Y-%m-%d %H:%M:%S")
+        trade_time = pd.to_datetime(open_time_str, errors='coerce')  # This will handle various datetime formats
+
+        if pd.isnull(trade_time):
+            raise ValueError("Open time format is incorrect or missing.")
 
         # Calculate session based on user's selected timezone
         session = get_session_from_time(trade_time, timezone)
+
+        # Add session information to the dataframe
+        df.at[i, 'Session'] = session
 
     except Exception as e:
         session = "Inconnu"
@@ -87,6 +96,10 @@ for i in range(len(df)):
     row_data["Edge"] = edge
     row_data["Session"] = session
     annotated_data.append(row_data)
+
+# ----- Display the DataFrame with 'Session' column -----
+st.markdown("### 📊 Trades Annotés avec Session")
+st.dataframe(df)
 
 # ----- Save and Export -----
 st.markdown("---")
