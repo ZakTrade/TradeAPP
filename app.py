@@ -1,28 +1,35 @@
 import streamlit as st
 import pandas as pd
-import os
+import pytz
+from datetime import datetime
+import locale
+import platform
 
-st.set_page_config(page_title="Trade Reporter - Upload", layout="centered")
-st.title("📊 Trade Reporter - Étape 1 : Import des trades")
+# ----- Page Config -----
+st.set_page_config(page_title="Trade Reporter - Annotation", layout="wide")
+st.title("✍️ Trade Reporter - Étape 2 : Annotation des trades")
 
-# Formulaire principal
-st.subheader("⚙️ Paramètres généraux")
+# ----- Load uploaded trades -----
+try:
+    # Check the system's locale and adjust accordingly
+    if platform.system() == 'Darwin':  # macOS
+        locale.setlocale(locale.LC_NUMERIC, 'fr_FR.UTF-8')  # For macOS locale, adjust accordingly
+    else:  # Default to US format for other systems (Windows/Linux)
+        locale.setlocale(locale.LC_NUMERIC, 'en_US.UTF-8')
 
-trader_name = st.text_input("Nom du trader", "TraderX")
-capital = st.number_input("Capital initial (€)", min_value=100.0, value=1000.0)
+    # Load CSV file
+    df = pd.read_csv("data/temp_trades.csv")
+except FileNotFoundError:
+    st.error("Aucun fichier trouvé. Retourne à l'étape 1 pour uploader ton fichier.")
+    st.stop()
 
-uploaded_file = st.file_uploader("📂 Upload ton fichier de trades (.csv)", type="csv")
+# ----- Sidebar: Timezone -----
+st.sidebar.header("🕒 Paramètres de fuseau horaire")
+timezone = st.sidebar.selectbox("Sélectionne ton fuseau horaire :", pytz.all_timezones, index=pytz.all_timezones.index("Europe/Paris"))
 
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
+# Store the selected timezone in the session state
+if 'timezone' not in st.session_state or st.session_state.timezone != timezone:
+    st.session_state.timezone = timezone
 
-    st.success("✅ Fichier chargé avec succès !")
-    st.dataframe(df.head())
-
-    # On sauvegarde le fichier temporairement pour l’utiliser dans la 2e page
-    df.to_csv("data/temp_trades.csv", index=False)
-
-    st.markdown("➡️ Passe à l'étape suivante pour annoter tes trades.")
-    st.page_link("pages/01_Annoter_trades.py", label="🚀 Annoter les trades", icon="✍️")
-else:
-    st.info("Upload ton fichier pour activer l'étape suivante.")
+# ----- Session Detection Function -----
+def get_se
