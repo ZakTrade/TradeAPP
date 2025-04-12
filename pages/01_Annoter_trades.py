@@ -152,9 +152,9 @@ for i in range(len(df)):
     # Determine Contract Size based on Symbol
     if symbol == "XAUUSD":
     contract_size = 100
-if symbol == "NAS100":
+    if symbol == "NAS100":
     contract_size = 1
-else:
+    else:
     contract_size = 100000
 
     # Calculate Risk in Dollars
