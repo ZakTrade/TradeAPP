@@ -149,11 +149,11 @@ for i in range(len(df)):
     # Calculate Price Difference
     price_difference = abs(open_price - sl_price)
 
-    # Determine Contract Size based on Symbol
-    if symbol == "NAS100":
-    contract_size = 1
+     # Determine Contract Size based on Symbol
+    if symbol == "XAUUSD":
+        contract_size = 100
     else:
-    contract_size = 100000
+        contract_size = 100000
 
     # Calculate Risk in Dollars
     risk_in_dollars = price_difference * volume * contract_size
