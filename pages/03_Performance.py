@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+import plotly.express as px
 
 st.set_page_config(page_title="Trade Reporter - Performance", layout="wide")
 st.title("📈 Analyse de Performance des Trades")
@@ -13,7 +12,7 @@ except FileNotFoundError:
     st.error("Aucun fichier annoté trouvé. Retourne à l'étape 2 pour annoter tes trades.")
     st.stop()
 
-# Nettoyage
+# Nettoyage des données
 df["Profit"] = pd.to_numeric(df["Profit"], errors="coerce").fillna(0)
 df["Close Time"] = pd.to_datetime(df["Close Time"], format="%Y.%m.%d %H:%M:%S", errors="coerce")
 
@@ -23,14 +22,24 @@ df["Balance"] = df["Profit"].cumsum()
 
 # Affichage de l'évolution du solde
 st.subheader("📊 Évolution du solde")
-fig, ax = plt.subplots(figsize=(10, 4))
-sns.lineplot(data=df, x="Close Time", y="Balance", ax=ax)
-ax.set_xlabel("Date")
-ax.set_ylabel("Solde (€)")
-ax.set_title("Évolution du capital")
-st.pyplot(fig)
+fig = px.line(df, x="Close Time", y="Balance", title="Évolution du capital")
+st.plotly_chart(fig, use_container_width=True)
 
-# Top 5 meilleurs et pires trades
+# Calcul et affichage des KPIs
+total_profit = df["Profit"].sum()
+avg_profit = df["Profit"].mean()
+win_rate = (df[df["Profit"] > 0].shape[0] / df.shape[0]) * 100
+
+st.subheader("📊 Indicateurs Clés de Performance (KPIs)")
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Profit Total (€)", f"{total_profit:.2f}")
+with col2:
+    st.metric("Profit Moyen par Trade (€)", f"{avg_profit:.2f}")
+with col3:
+    st.metric("Taux de Réussite (%)", f"{win_rate:.2f}")
+
+# Top 5 des meilleurs et pires trades
 st.subheader("🏆 Meilleurs et Pires Trades")
 col1, col2 = st.columns(2)
 
@@ -44,15 +53,9 @@ with col2:
 
 # Analyse de rentabilité par combinaison
 st.subheader("🔍 Synthèse des combinaisons les plus rentables")
-
 group_cols = ["Session", "Edge Time Frame", "Ecole", "Edge", "Trade Type"]
 grouped = df.groupby(group_cols)["Profit"].sum().reset_index()
 grouped = grouped.sort_values(by="Profit", ascending=False)
 
 st.markdown("**💡 Top 10 Combinaisons Rentables**")
 st.dataframe(grouped.head(10))
-
-# Heatmap des sessions vs rentabilité
-st.subheader("🌍 Rentabilité par Session")
-session_profit = df.groupby("Session")["Profit"].sum().sort_values(ascending=False)
-st.bar_chart(session_profit)
