@@ -152,8 +152,8 @@ for i in range(len(df)):
     # Determine Contract Size based on Symbol
     if symbol == "XAUUSD":
         contract_size = 100
-    else:
-        contract_size = 100000
+    elif symbol == "NAS100":
+        contract_size = 1
 
     # Calculate Risk in Dollars
     risk_in_dollars = price_difference * volume * contract_size
