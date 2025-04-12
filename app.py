@@ -1,9 +1,9 @@
+# app.py
 import streamlit as st
 import pandas as pd
 import pytz
 from datetime import datetime
-import locale
-import platform
+from 01_Another_trade import process_trade_data, get_session_from_time, edges_dict  # Import functions from the helper module
 
 # ----- Page Config -----
 st.set_page_config(page_title="Trade Reporter - Annotation", layout="wide")
@@ -11,13 +11,6 @@ st.title("✍️ Trade Reporter - Étape 2 : Annotation des trades")
 
 # ----- Load uploaded trades -----
 try:
-    # Check the system's locale and adjust accordingly
-    if platform.system() == 'Darwin':  # macOS
-        locale.setlocale(locale.LC_NUMERIC, 'fr_FR.UTF-8')  # For macOS locale, adjust accordingly
-    else:  # Default to US format for other systems (Windows/Linux)
-        locale.setlocale(locale.LC_NUMERIC, 'en_US.UTF-8')
-
-    # Load CSV file
     df = pd.read_csv("data/temp_trades.csv")
 except FileNotFoundError:
     st.error("Aucun fichier trouvé. Retourne à l'étape 1 pour uploader ton fichier.")
@@ -30,33 +23,6 @@ timezone = st.sidebar.selectbox("Sélectionne ton fuseau horaire :", pytz.all_ti
 # Store the selected timezone in the session state
 if 'timezone' not in st.session_state or st.session_state.timezone != timezone:
     st.session_state.timezone = timezone
-
-# ----- Session Detection Function -----
-def get_session_from_time(trade_time, user_timezone):
-    """Calculate the session based on local trade time"""
-    local_tz = pytz.timezone(user_timezone)
-    # Localize the trade time based on the user's selected timezone
-    trade_time_local = local_tz.localize(trade_time)
-
-    # Check the session based on the local time
-    if 0 <= trade_time_local.hour < 8:
-        return "Asia"
-    elif 8 <= trade_time_local.hour < 13:
-        return "London"
-    elif 13 <= trade_time_local.hour < 22:
-        return "New York"
-    else:
-        return "After Hours"
-
-# ----- Strategy / Edge Mapping -----
-edges_dict = {
-    "ICT": ["FVG", "OTE", "BOS", "SMT", "Breaker", "Liquidity Sweep", "Judas Swing", "Autre"],
-    "SMC": ["CHoCH", "BOS", "FVG", "Order Block", "Liquidity Grab", "Autre"],
-    "Wyckoff": ["Spring", "Upthrust", "PSY", "AR", "ST", "LPS", "SOW", "Autre"],
-    "Price Action": ["Pin Bar", "Engulfing", "Break & Retest", "Inside Bar", "Autre"],
-    "Breakout": ["Breakout Range", "Retest", "Volume Spike", "Autre"],
-    "Autre": ["Edge personnalisé"]
-}
 
 # ----- Display Annotation Interface -----
 annotated_data = []
