@@ -1,57 +1,38 @@
 import streamlit as st
 import pandas as pd
-import pytz
 from datetime import datetime
+import pytz
+from 01_Another_trade import get_session_from_time, edges_dict
 
-# ----- Page Config -----
-st.set_page_config(page_title="Trade Reporter - Annotation", layout="wide")
-st.title("✍️ Trade Reporter - Étape 2 : Annotation des trades")
+# --- Page Configuration ---
+st.set_page_config(page_title="Trade Reporter - Annotation des Trades", layout="wide")
+st.title("✍️ Trade Reporter - Étape 2 : Annotation des Trades")
 
-# ----- Load uploaded trades -----
-try:
-    df = pd.read_csv("data/temp_trades.csv")
-except FileNotFoundError:
-    st.error("Aucun fichier trouvé. Retourne à l'étape 1 pour uploader ton fichier.")
+# --- Retrieve the uploaded file path from session state ---
+if "uploaded_file_path" not in st.session_state:
+    st.error("Aucun fichier téléchargé. Retourne à l'étape 1 pour uploader ton fichier.")
     st.stop()
 
-# ----- Sidebar: Timezone -----
+file_path = st.session_state.uploaded_file_path
+
+# Load the CSV file
+df = pd.read_csv(file_path)
+
+# --- Sidebar: Timezone ---
 st.sidebar.header("🕒 Paramètres de fuseau horaire")
 timezone = st.sidebar.selectbox("Sélectionne ton fuseau horaire :", pytz.all_timezones, index=pytz.all_timezones.index("Europe/Paris"))
 
-# ----- Session Detection Function -----
-def get_session_from_time(trade_time, user_timezone):
-    """Calculate the session based on local trade time"""
-    local_tz = pytz.timezone(user_timezone)
-    # Localize the trade time based on the user's selected timezone
-    trade_time_local = local_tz.localize(trade_time)
+# Store the selected timezone in the session state
+if 'timezone' not in st.session_state or st.session_state.timezone != timezone:
+    st.session_state.timezone = timezone
+    # Recalculate session times when timezone changes
+    df['Session'] = df['Open Time'].apply(lambda x: get_session_from_time(pd.to_datetime(x, format='%Y.%m.%d %H:%M:%S'), st.session_state.timezone))
 
-    # Check the session based on the local time
-    if 0 <= trade_time_local.hour < 8:
-        return "Asia"
-    elif 8 <= trade_time_local.hour < 13:
-        return "London"
-    elif 13 <= trade_time_local.hour < 22:
-        return "New York"
-    else:
-        return "After Hours"
-
-# ----- Strategy / Edge Mapping -----
-edges_dict = {
-    "ICT": ["FVG", "OTE", "BOS", "SMT", "Breaker", "Liquidity Sweep", "Judas Swing", "Autre"],
-    "SMC": ["CHoCH", "BOS", "FVG", "Order Block", "Liquidity Grab", "Autre"],
-    "Wyckoff": ["Spring", "Upthrust", "PSY", "AR", "ST", "LPS", "SOW", "Autre"],
-    "Price Action": ["Pin Bar", "Engulfing", "Break & Retest", "Inside Bar", "Autre"],
-    "Breakout": ["Breakout Range", "Retest", "Volume Spike", "Autre"],
-    "Autre": ["Edge personnalisé"]
-}
-
-# ----- Display Annotation Interface -----
-annotated_data = []
-
+# --- Display Annotation Interface ---
 st.markdown("🔽 Pour chaque trade, sélectionne l’école, l’edge, et observe la session automatiquement détectée.")
 
 # Add the 'Session' column for displaying the session
-df['Session'] = ""
+annotated_data = []
 
 for i in range(len(df)):
     st.markdown(f"---")
@@ -75,7 +56,7 @@ for i in range(len(df)):
             raise ValueError(f"Le format de `Open Time` est incorrect pour le trade #{i + 1}. La valeur était : {open_time_str}")
 
         # Calculate session based on user's selected timezone
-        session = get_session_from_time(trade_time, timezone)
+        session = get_session_from_time(trade_time, st.session_state.timezone)
 
         # Add session information to the dataframe
         df.at[i, 'Session'] = session
@@ -102,11 +83,11 @@ for i in range(len(df)):
     row_data["Session"] = session
     annotated_data.append(row_data)
 
-# ----- Display the DataFrame with 'Session' column -----
+# --- Display the DataFrame with 'Session' column ---
 st.markdown("### 📊 Trades Annotés avec Session")
 st.dataframe(df)
 
-# ----- Save and Export -----
+# --- Save and Export ---
 st.markdown("---")
 if st.button("💾 Enregistrer les annotations"):
     annotated_df = pd.DataFrame(annotated_data)
