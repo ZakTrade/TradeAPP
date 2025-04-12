@@ -14,9 +14,12 @@ except FileNotFoundError:
     st.error("Aucun fichier trouvé. Retourne à l'étape 1 pour uploader ton fichier.")
     st.stop()
 
-# ----- Sidebar: Timezone -----
+# ----- Sidebar: Timezone and Capital -----
 st.sidebar.header("🕒 Paramètres de fuseau horaire")
 timezone = st.sidebar.selectbox("Sélectionne ton fuseau horaire :", pytz.all_timezones, index=pytz.all_timezones.index("Europe/Paris"))
+
+# Input for initial capital in €
+initial_capital = st.sidebar.number_input("💶 Capital initial (€)", min_value=1.0, value=1000.0)
 
 # Store the selected timezone in session_state to maintain it across re-runs
 if 'timezone' not in st.session_state or st.session_state.timezone != timezone:
@@ -82,6 +85,7 @@ df['Session'] = ""
 df['Trade Type'] = ""  # Add new column for trade type
 df['Edge Time Frame'] = ""  # Add new column for edge time frame
 df['Risk in Dollars'] = 0.0  # Add new column for risk calculation
+df['Risk as % of Capital'] = 0.0  # Add column for risk as percentage of initial capital
 
 for i in range(len(df)):
     st.markdown(f"---")
@@ -154,7 +158,12 @@ for i in range(len(df)):
     risk_in_dollars = price_difference * volume * contract_size
     df.at[i, 'Risk in Dollars'] = risk_in_dollars
 
+    # Calculate risk as a percentage of the initial capital
+    risk_as_percentage = (risk_in_dollars / initial_capital) * 100
+    df.at[i, 'Risk as % of Capital'] = risk_as_percentage
+
     st.markdown(f"**💰 Risque calculé en $ :** `{risk_in_dollars:.2f}`")
+    st.markdown(f"**📊 Risque en % du capital initial :** `{risk_as_percentage:.2f}%`")
 
     # Update the dataframe with new annotations
     df.at[i, 'Ecole'] = school
