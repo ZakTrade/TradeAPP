@@ -62,12 +62,12 @@ for i in range(len(df)):
 
     # --- Session Detection from "open_time" column ---
     try:
-        # Parse open time from the trade using pd.to_datetime() for flexible datetime parsing
+        # Attempt to parse the open_time with pd.to_datetime(), handling errors
         open_time_str = trade_data.get("open_time")  # Ensure this matches your column name
-        trade_time = pd.to_datetime(open_time_str, errors='coerce')  # This will handle various datetime formats
+        trade_time = pd.to_datetime(open_time_str, errors='coerce', dayfirst=True)  # Coerce invalid dates to NaT
 
         if pd.isnull(trade_time):
-            raise ValueError("Open time format is incorrect or missing.")
+            raise ValueError(f"Le format de `open_time` est incorrect pour le trade #{i + 1}. La valeur était : {open_time_str}")
 
         # Calculate session based on user's selected timezone
         session = get_session_from_time(trade_time, timezone)
@@ -77,7 +77,7 @@ for i in range(len(df)):
 
     except Exception as e:
         session = "Inconnu"
-        st.warning(f"⚠️ Impossible de calculer la session pour ce trade : {e}")
+        st.warning(f"⚠️ Impossible de calculer la session pour ce trade #{i + 1}: {e}")
 
     st.markdown(f"**🕒 Session détectée :** `{session}`")
 
