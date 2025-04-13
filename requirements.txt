@@ -3,4 +3,4 @@ pandas
 matplotlib
 mplfinance
 pytz
-
+MetaTrader5 
