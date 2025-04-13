@@ -1,0 +1,24 @@
+
+# forex_db_setup.py
+import sqlite3
+
+# Connect to SQLite database (it will be created if it doesn't exist)
+conn = sqlite3.connect("forex_data.db")
+cursor = conn.cursor()
+
+# Create table for storing forex data
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS forex_prices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT NOT NULL,
+    timestamp DATETIME NOT NULL,
+    open REAL,
+    high REAL,
+    low REAL,
+    close REAL,
+    volume REAL
+)
+""")
+
+conn.commit()
+conn.close()
