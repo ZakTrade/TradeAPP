@@ -19,3 +19,15 @@ for col in columns:
     print(col)
 
 conn.close()
+
+✅ Tables found: [('forex_prices',)]
+
+🧱 Table structure:
+(0, 'id', 'INTEGER', 0, None, 1)
+(1, 'symbol', 'TEXT', 1, None, 0)
+(2, 'timestamp', 'DATETIME', 1, None, 0)
+(3, 'open', 'REAL', 0, None, 0)
+(4, 'high', 'REAL', 0, None, 0)
+(5, 'low', 'REAL', 0, None, 0)
+(6, 'close', 'REAL', 0, None, 0)
+(7, 'volume', 'REAL', 0, None, 0)
