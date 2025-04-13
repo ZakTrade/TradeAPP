@@ -19,7 +19,37 @@ for col in columns:
     print(col)
 
 conn.close()
+symbols = {
+    "XAUUSD": "XAUUSD=X",  # Gold
+    "EURUSD": "EURUSD=X",
+    "GBPUSD": "GBPUSD=X",
+    "NAS100": "^NDX"       # Nasdaq 100 Index
+}
 
+def fetch_and_store():
+    conn = sqlite3.connect("forex_data.db")
+    cursor = conn.cursor()
+
+    for symbol_name, y_symbol in symbols.items():
+        df = yf.download(y_symbol, period="7d", interval="1h")  # change as needed
+        for index, row in df.iterrows():
+            cursor.execute("""
+                INSERT INTO forex_prices (symbol, timestamp, open, high, low, close, volume)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                symbol_name,
+                index.to_pydatetime(),
+                row['Open'],
+                row['High'],
+                row['Low'],
+                row['Close'],
+                row['Volume']
+            ))
+
+    conn.commit()
+    conn.close()
+
+fetch_and_store()
 ✅ Tables found: [('forex_prices',)]
 
 🧱 Table structure:
