@@ -1,5 +1,9 @@
 import streamlit as st
 import sqlite3
+import pandas as pd
+from datetime import datetime
+import requests
+from io import StringIO
 
 # ---- Page Config ----
 st.set_page_config(page_title="📊 Forex DB Check", layout="centered")
@@ -31,15 +35,79 @@ def connect_db():
 # ---- UI ----
 symbol = st.text_input("🔍 Entrez un symbole (ex: XAUUSD, EURUSD, NAS100)", "XAUUSD").upper()
 
-if st.button("Vérifier le symbole"):
+# ---- CSV Upload ----
+st.subheader("📤 Importer des données Forex")
+uploaded_file = st.file_uploader("Choisissez un fichier CSV contenant les données du symbole spécifié", type=["csv"])
+
+def insert_data_from_df(df, symbol):
+    conn, cursor = connect_db()
+    inserted = 0
+    for _, row in df.iterrows():
+        try:
+            cursor.execute("""
+                INSERT INTO forex_prices (symbol, timestamp, open, high, low, close, volume)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                symbol,
+                datetime.strptime(str(row["timestamp"]), "%Y-%m-%d %H:%M:%S"),
+                row["open"], row["high"], row["low"], row["close"], row["volume"]
+            ))
+            inserted += 1
+        except Exception as e:
+            st.warning(f"Erreur lors de l'insertion d'une ligne : {e}")
+    conn.commit()
+    conn.close()
+    return inserted
+
+if uploaded_file is not None:
+    try:
+        df = pd.read_csv(uploaded_file)
+        st.write("Aperçu du fichier :")
+        st.dataframe(df.head())
+
+        required_cols = {"timestamp", "open", "high", "low", "close", "volume"}
+        if not required_cols.issubset(set(df.columns)):
+            st.error(f"Le fichier doit contenir les colonnes suivantes : {required_cols}")
+        else:
+            inserted = insert_data_from_df(df, symbol)
+            st.success(f"✅ {inserted} lignes insérées pour `{symbol}` dans la base de données.")
+    except Exception as e:
+        st.error(f"Erreur lors de la lecture du fichier : {e}")
+
+# ---- Get Data from ForexSB ----
+st.subheader("🌐 Télécharger des données depuis ForexSB")
+fetch_symbols = ["XAUUSD", "EURUSD", "GBPUSD", "NAS100"]
+periods = ["M1", "M5", "M15", "H1"]
+
+if st.button("⬇️ Télécharger et insérer les données ForexSB"):
+    base_url = "https://forexsb.com/historical-data/download/"
+
+    for s in fetch_symbols:
+        for p in periods:
+            st.write(f"🔄 Téléchargement {s} ({p})...")
+            try:
+                url = f"{base_url}{s.lower()}-{p}.csv"
+                response = requests.get(url)
+                if response.status_code == 200:
+                    df = pd.read_csv(StringIO(response.text))
+                    df.columns = [c.lower() for c in df.columns]
+                    if "time" in df.columns:
+                        df.rename(columns={"time": "timestamp"}, inplace=True)
+                    inserted = insert_data_from_df(df, s)
+                    st.success(f"✅ {inserted} lignes insérées pour {s} ({p})")
+                else:
+                    st.warning(f"⚠️ Données introuvables pour {s} ({p})")
+            except Exception as e:
+                st.error(f"❌ Erreur lors du téléchargement pour {s} ({p}) : {e}")
+
+# ---- Check Existing Data ----
+if st.button("📌 Vérifier le symbole dans la base"):
     conn, cursor = connect_db()
 
-    # Check if table exists (optional)
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='forex_prices';")
     if not cursor.fetchone():
         st.error("❌ Table 'forex_prices' introuvable.")
     else:
-        # Check if the symbol exists in the table
         cursor.execute("SELECT COUNT(*) FROM forex_prices WHERE symbol = ?", (symbol,))
         count = cursor.fetchone()[0]
 
@@ -48,7 +116,6 @@ if st.button("Vérifier le symbole"):
         else:
             st.warning(f"⚠️ Aucun enregistrement trouvé pour `{symbol}`. Vous pouvez maintenant importer des données.")
 
-        # Optional: show 5 most recent rows
         cursor.execute("""
         SELECT timestamp, open, high, low, close, volume
         FROM forex_prices
