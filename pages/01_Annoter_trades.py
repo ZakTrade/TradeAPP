@@ -1,58 +1,21 @@
 import sqlite3
-import pandas as pd
-import mplfinance as mpf
-import os
 
-# ----- Configuration -----
-DB_PATH = "forex_data.db"  # Replace with your actual DB path
-SYMBOLS = ["XAUUSD", "EURUSD", "GBPUSD", "NAS100"]  # Add or remove as needed
-TABLE_NAME = "forex_prices"  # Replace if your table name is different
-
-# ----- Connect to Database -----
-conn = sqlite3.connect(DB_PATH)
+# Connect to the database
+conn = sqlite3.connect("forex_data.db")
 cursor = conn.cursor()
 
-# Check if table exists
+# Check tables
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-tables = [t[0] for t in cursor.fetchall()]
-if TABLE_NAME not in tables:
-    raise ValueError(f"❌ Table '{TABLE_NAME}' not found in database.")
+tables = cursor.fetchall()
 
-# ----- Create Output Directory -----
-os.makedirs("charts", exist_ok=True)
+print("✅ Tables found:", tables)
 
-# ----- Plot Each Symbol -----
-for symbol in SYMBOLS:
-    print(f"📊 Plotting {symbol}...")
+# Optional: Check table schema
+cursor.execute("PRAGMA table_info(forex_prices);")
+columns = cursor.fetchall()
 
-    # Load the data for the symbol
-    query = f"""
-    SELECT timestamp, open, high, low, close, volume
-    FROM {TABLE_NAME}
-    WHERE symbol = ?
-    ORDER BY timestamp
-    """
-    df = pd.read_sql_query(query, conn, params=(symbol,))
-    
-    if df.empty:
-        print(f"⚠️ No data found for {symbol}. Skipping.")
-        continue
+print("\n🧱 Table structure:")
+for col in columns:
+    print(col)
 
-    # Convert timestamp to datetime
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
-    df.set_index('timestamp', inplace=True)
-
-    # Plot and save chart
-    chart_file = f"charts/{symbol}_chart.png"
-    mpf.plot(df,
-             type='candle',
-             style='charles',
-             title=f"{symbol} Price Chart",
-             volume=True,
-             mav=(10, 20),
-             savefig=chart_file)
-    print(f"✅ Saved {symbol} chart to {chart_file}")
-
-# ----- Close connection -----
 conn.close()
-print("✅ Done.")
