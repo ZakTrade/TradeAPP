@@ -1,4 +1,8 @@
+# fetch_forex_data.py
+import yfinance as yf
 import sqlite3
+import datetime
+
 
 # Connect to the database
 conn = sqlite3.connect("forex_data.db")
